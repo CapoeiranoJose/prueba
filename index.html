@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Compra Eficiente - Mercadona Albacete</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        mercadona: {
+                            DEFAULT: '#008248',
+                            dark: '#006638',
+                            light: '#e6f3ed',
+                            accent: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .item-checked {
+            opacity: 0.55;
+            background-color: #f8fafc;
+        }
+        .item-checked .item-name {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased pb-36">
+
+    <!-- CABECERA FIJA -->
+    <header class="sticky top-0 z-30 bg-mercadona text-white shadow-md">
+        <div class="max-w-2xl mx-auto px-4 pt-3 pb-2">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                        <i class="ph-bold ph-shopping-cart text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-base leading-tight tracking-tight">Compra Eficiente</h1>
+                        <p class="text-[11px] text-emerald-100 flex items-center gap-1">
+                            <i class="ph-fill ph-map-pin"></i> C/ Constantino Romero · Albacete
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Botón Compartir -->
+                <button onclick="openShareModal()" class="bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-900 font-bold text-xs px-3 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition">
+                    <i class="ph-bold ph-share-network text-base"></i>
+                    <span>Compartir</span>
+                </button>
+            </div>
+
+            <!-- Gasto Total en Tiempo Real (Solo de lo marcado en el carrito) -->
+            <div class="mt-2.5 bg-emerald-900/40 rounded-xl p-2.5 flex items-center justify-between border border-white/10">
+                <div class="flex items-center gap-2">
+                    <div class="bg-amber-400 text-slate-900 p-1.5 rounded-lg font-black text-xs">
+                        <i class="ph-bold ph-wallet"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-emerald-200 uppercase tracking-wider font-semibold">Total en carrito</p>
+                        <p id="realtime-total" class="text-base font-black text-white">0,00 €</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span id="progress-text" class="text-xs text-emerald-50 font-medium block">0 de 0 en el carrito</span>
+                    <span id="urgent-counter" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold hidden inline-block mt-0.5">0 urgentes</span>
+                </div>
+            </div>
+            <div class="w-full bg-black/20 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div id="progress-bar" class="bg-amber-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <!-- Buscador rápido -->
+            <div class="mt-2.5 relative">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+                <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Buscar producto (ej. leche, dorada, queso...)" 
+                    class="w-full bg-white text-slate-800 placeholder-slate-400 text-sm rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner">
+                <button id="clear-search" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                    <i class="ph-bold ph-x text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de filtros horizontal -->
+        <div class="bg-mercadona-dark/95 border-t border-white/10">
+            <div class="max-w-2xl mx-auto px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar" id="filter-bar">
+                <button data-filter="all" onclick="setFilter('all')" class="filter-btn active shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-white text-mercadona shadow-sm">
+                    Todos
+                </button>
+                <button data-filter="pending" onclick="setFilter('pending')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <i class="ph-bold ph-circle"></i> Por comprar
+                </button>
+                <button data-filter="urgente" onclick="setFilter('urgente')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-red-400"></span> Urgente
+                </button>
+                <button data-filter="fresco" onclick="setFilter('fresco')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Frescos
+                </button>
+                <button data-filter="congelado" onclick="setFilter('congelado')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Congelados
+                </button>
+                <button data-filter="frutas" onclick="setFilter('frutas')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span> Frutas y Verduras
+                </button>
+                <button data-filter="semanal" onclick="setFilter('semanal')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-sky-400"></span> Semanal
+                </button>
+                <button data-filter="limpieza" onclick="setFilter('limpieza')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-purple-400"></span> Limpieza
+                </button>
+                <button data-filter="preparados" onclick="setFilter('preparados')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-pink-400"></span> Preparados
+                </button>
+                <button data-filter="perecedero" onclick="setFilter('perecedero')" class="filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-orange-400"></span> Perecederos
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BANNER DE LISTA COMPARTIDA -->
+    <div id="shared-banner" class="hidden max-w-2xl mx-auto px-4 pt-3">
+        <div class="bg-amber-50 border border-amber-300 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2.5 text-amber-900">
+                <i class="ph-fill ph-sparkle text-xl text-amber-500 shrink-0"></i>
+                <p class="text-xs font-medium">Has cargado una <strong>lista compartida</strong> con unidades, precios y estado actualizados.</p>
+            </div>
+            <button onclick="document.getElementById('shared-banner').classList.add('hidden')" class="text-amber-700 p-1">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL: PASILLOS Y PRODUCTOS -->
+    <main id="aisles-container" class="max-w-2xl mx-auto px-3 pt-3 space-y-3">
+        <!-- Renderizado dinámico -->
+    </main>
+
+    <!-- ACCIÓN DE RESETEO SEGURO -->
+    <div class="max-w-2xl mx-auto px-3 mt-6 mb-8 text-center">
+        <button onclick="confirmFullReset()" class="text-slate-400 hover:text-red-600 text-[11px] font-medium py-1.5 px-3 rounded-lg inline-flex items-center gap-1 transition">
+            <i class="ph-bold ph-arrow-counter-clockwise"></i>
+            <span>Restaurar lista original y borrar añadidos</span>
+        </button>
+    </div>
+
+    <!-- ESTADO VACÍO -->
+    <div id="empty-state" class="hidden max-w-md mx-auto text-center py-12 px-4">
+        <div class="w-14 h-14 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="ph-bold ph-basket text-2xl"></i>
+        </div>
+        <h3 class="font-bold text-slate-700">No hay productos con este filtro</h3>
+        <p class="text-xs text-slate-500 mt-1">Prueba a cambiar el filtro superior o limpia la búsqueda.</p>
+        <button onclick="resetFilters()" class="mt-4 bg-mercadona text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm">
+            Ver todos los productos
+        </button>
+    </div>
+
+    <!-- BARRA INFERIOR FLOTANTE -->
+    <div class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2.5 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
+            <button onclick="openAddModal()" class="flex-1 bg-mercadona hover:bg-mercadona-dark active:scale-98 text-white font-bold text-xs py-3 px-3 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition">
+                <i class="ph-bold ph-plus-circle text-base"></i>
+                <span>Añadir producto</span>
+            </button>
+
+            <button onclick="confirmUncheckAll()" class="bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-700 font-semibold text-xs py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition" title="Desmarcar comprados conservando precios">
+                <i class="ph-bold ph-arrow-counter-clockwise text-base text-mercadona"></i>
+                <span>Limpiar carrito</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: AÑADIR PRODUCTO -->
+    <div id="add-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-extrabold text-lg text-slate-800">Añadir producto a la lista</h2>
+                <button onclick="closeAddModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full bg-slate-100">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+
+            <form onsubmit="saveNewProduct(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nombre del producto</label>
+                    <input type="text" id="new-item-name" required placeholder="Ej. Aceite de oliva 1L..."
+                        class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-mercadona focus:ring-2 focus:ring-mercadona/20">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Pasillo / Ubicación</label>
+                    <select id="new-item-aisle" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:border-mercadona">
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Unidades iniciales</label>
+                        <input type="number" id="new-item-qty" min="1" value="1" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Precio unitario (€)</label>
+                        <input type="number" id="new-item-price" step="0.01" min="0" placeholder="0.00" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Rasgos / Etiquetas</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-400">
+                            <input type="checkbox" id="tag-urgente" class="accent-red-600 w-4 h-4">
+                            <span class="text-xs font-bold text-red-700">Urgente</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-400">
+                            <input type="checkbox" id="tag-fresco" class="accent-emerald-600 w-4 h-4">
+                            <span class="text-xs font-bold text-emerald-700">Fresco</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-cyan-50 has-[:checked]:border-cyan-400">
+                            <input type="checkbox" id="tag-congelado" class="accent-cyan-600 w-4 h-4">
+                            <span class="text-xs font-bold text-cyan-700">Congelado</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-amber-50 has-[:checked]:border-amber-400">
+                            <input type="checkbox" id="tag-frutas" class="accent-amber-600 w-4 h-4">
+                            <span class="text-xs font-bold text-amber-700">Frutas y Verd.</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-sky-50 has-[:checked]:border-sky-400">
+                            <input type="checkbox" id="tag-semanal" class="accent-sky-600 w-4 h-4">
+                            <span class="text-xs font-bold text-sky-700">Semanal</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-purple-50 has-[:checked]:border-purple-400">
+                            <input type="checkbox" id="tag-limpieza" class="accent-purple-600 w-4 h-4">
+                            <span class="text-xs font-bold text-purple-700">Limpieza</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-pink-50 has-[:checked]:border-pink-400">
+                            <input type="checkbox" id="tag-preparados" class="accent-pink-600 w-4 h-4">
+                            <span class="text-xs font-bold text-pink-700">Preparados</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:bg-orange-50 has-[:checked]:border-orange-400">
+                            <input type="checkbox" id="tag-perecedero" class="accent-orange-600 w-4 h-4">
+                            <span class="text-xs font-bold text-orange-700">Perecedero</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-mercadona hover:bg-mercadona-dark text-white font-bold py-3 rounded-xl shadow-md transition">
+                    Guardar producto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: COMPARTIR (Actualizado sin texto redundante y con WhatsApp directo) -->
+    <div id="share-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <div class="bg-amber-100 text-amber-700 p-2 rounded-xl">
+                        <i class="ph-bold ph-users-three text-xl"></i>
+                    </div>
+                    <h2 class="font-extrabold text-lg text-slate-800">Compartir lista interactiva</h2>
+                </div>
+                <button onclick="closeShareModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full bg-slate-100">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                Envía tu lista de la compra actualizada. Quien abra el enlace podrá ver al instante los productos marcados, precios, cantidades y artículos añadidos.
+            </p>
+
+            <!-- Aviso si se abre localmente -->
+            <div id="local-warning" class="hidden mb-3 bg-blue-50 border border-blue-200 text-blue-800 p-2.5 rounded-xl text-[11px] leading-relaxed">
+                <i class="ph-bold ph-info text-blue-600 mr-1"></i> <strong>Nota:</strong> Estás ejecutando el archivo de forma local en tu equipo. Para que otras personas puedan abrir el enlace por WhatsApp, sube este archivo HTML a un servicio gratuito como <a href="https://pages.github.com/" target="_blank" class="underline font-bold">GitHub Pages</a> o <a href="https://app.netlify.com/drop" target="_blank" class="underline font-bold">Netlify Drop</a>.
+            </div>
+
+            <div class="space-y-2.5">
+                <button onclick="shareViaWhatsApp()" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition">
+                    <i class="ph-bold ph-whatsapp-logo text-xl"></i>
+                    <span>Enviar por WhatsApp directamente</span>
+                </button>
+                <button onclick="copyInteractiveLink()" class="w-full bg-mercadona hover:bg-mercadona-dark text-white font-bold py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition">
+                    <i class="ph-bold ph-link text-lg"></i>
+                    <span>Copiar enlace interactivo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl text-center">
+            <div id="confirm-icon-box" class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3">
+                <i class="ph-bold ph-warning text-2xl"></i>
+            </div>
+            <h3 id="confirm-title" class="font-extrabold text-base text-slate-800">¿Estás seguro?</h3>
+            <p id="confirm-message" class="text-xs text-slate-500 mt-1.5 leading-relaxed"></p>
+            <div class="grid grid-cols-2 gap-2.5 mt-5">
+                <button onclick="closeConfirmModal()" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                    Cancelar
+                </button>
+                <button id="confirm-action-btn" class="py-2.5 px-4 rounded-xl bg-mercadona hover:bg-mercadona-dark text-white font-bold text-xs shadow-sm transition">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg pointer-events-none opacity-0 transition-opacity duration-200 flex items-center gap-2">
+        <i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>
+        <span id="toast-msg">Acción completada</span>
+    </div>
+
+    <script>
+        const DEFAULT_AISLES = [
+            {
+                id: 'pasillo-1',
+                title: 'Pasillo 1 · Frutas y verduras',
+                subtitle: 'De las cajas a la mitad',
+                icon: 'ph-carrot',
+                collapsed: false,
+                items: [
+                    { name: 'Patatas', tags: ['fresco', 'semanal', 'frutas'] },
+                    { name: 'Cebollas', tags: ['fresco', 'semanal', 'frutas'] },
+                    { name: 'Ajos', tags: ['fresco', 'frutas'] },
+                    { name: 'Tomates tipo cherry', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Tomates tipo pera', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Tomates en rama', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Tomates tipo kumato', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Tomates tipo Rosa', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Pepinos', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Kiwis verdes', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Kiwis amarillos', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Setas', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Setas Shitake', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Champiñones blancos', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Champiñones Portobello', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Calabacín', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Berenjenas', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Apio', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Puerro', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Zanahorias', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Perejil', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Lechuga iceberg', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Lechuga mini', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Plátanos', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Manzana', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Pera', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Naranja', tags: ['fresco', 'perecedero', 'semanal', 'frutas'] },
+                    { name: 'Melocotón', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Limones', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Uva', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Fresas', tags: ['fresco', 'perecedero', 'frutas'] },
+                    { name: 'Piña natural', tags: ['fresco', 'perecedero', 'frutas'] }
+                ]
+            },
+            {
+                id: 'pasillo-2',
+                title: 'Pasillo 2 · Bebidas',
+                subtitle: 'De la mitad al fondo',
+                icon: 'ph-brandy',
+                collapsed: false,
+                items: [
+                    { name: 'Vino blanco', tags: [] },
+                    { name: 'Cerveza', tags: [] },
+                    { name: 'Acuarius naranja', tags: [] },
+                    { name: 'Fanta de naranja', tags: [] },
+                    { name: 'CocaCola', tags: [] },
+                    { name: 'Agua grande', tags: ['semanal'] },
+                    { name: 'Agua pequeña', tags: [] }
+                ]
+            },
+            {
+                id: 'giro-2-3',
+                title: 'Giro Pasillo 2 al 3 · Pescado y Charcutería',
+                subtitle: 'Zona del fondo',
+                icon: 'ph-fish',
+                collapsed: false,
+                items: [
+                    { name: 'Bacaladilla', tags: ['fresco', 'perecedero'] },
+                    { name: 'Boquerones (en temporada)', tags: ['fresco', 'perecedero'] },
+                    { name: 'Preparado para paella', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Navajas', tags: ['fresco', 'perecedero'] },
+                    { name: 'Mejillones (en temporada)', tags: ['fresco', 'perecedero'] },
+                    { name: 'Gamba cocida', tags: ['fresco', 'perecedero'] },
+                    { name: 'Langostino cocido', tags: ['fresco', 'perecedero'] },
+                    { name: 'Dorada', tags: ['fresco', 'perecedero'] },
+                    { name: 'Caracoles (en temporada)', tags: ['fresco', 'perecedero'] },
+                    { name: 'Salpicón de marisco', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Merluza rebozada', tags: ['perecedero', 'preparados'] },
+                    { name: 'Salmón ahumado', tags: ['perecedero'] },
+                    { name: 'Gulas', tags: ['perecedero'] },
+                    { name: 'Palitos de pescado', tags: ['perecedero'] },
+                    { name: 'Anchoas en aceite de oliva', tags: ['perecedero'] },
+                    { name: 'Boquerones en vinagre', tags: ['perecedero'] },
+                    { name: 'Jamón cocido extra (Embutidos)', tags: ['fresco', 'perecedero', 'semanal'] },
+                    { name: 'Lacón (Embutidos)', tags: ['fresco', 'perecedero'] },
+                    { name: 'Pollo La Roteña (Embutidos)', tags: ['fresco', 'perecedero'] },
+                    { name: 'Huevos grandes', tags: ['fresco', 'perecedero', 'semanal'] }
+                ]
+            },
+            {
+                id: 'pasillo-3',
+                title: 'Pasillo 3 · Embutidos, Quesos, Carnes y Salsas',
+                subtitle: 'Del fondo a las cajas',
+                icon: 'ph-cow',
+                collapsed: false,
+                items: [
+                    { name: 'Taco de jamón', tags: ['perecedero'] },
+                    { name: 'Mortadela con aceitunas', tags: ['fresco', 'perecedero'] },
+                    { name: 'Jamón en lonchas', tags: ['perecedero', 'semanal'] },
+                    { name: 'Lomo en lonchas', tags: ['perecedero'] },
+                    { name: 'Chorizo en lonchas', tags: ['perecedero'] },
+                    { name: 'Salchichón en lonchas', tags: ['perecedero'] },
+                    { name: 'Chorizo Pamplona en lonchas', tags: ['perecedero'] },
+                    { name: 'Salchichas francfurt', tags: ['perecedero'] },
+                    { name: 'Taco de panceta', tags: ['perecedero'] },
+                    { name: 'Bacon en lonchas', tags: ['perecedero'] },
+                    { name: 'Queso mozzarella', tags: ['fresco', 'perecedero'] },
+                    { name: 'Queso feta', tags: ['fresco', 'perecedero'] },
+                    { name: 'Requesón', tags: ['fresco', 'perecedero'] },
+                    { name: 'Quesitos', tags: ['perecedero'] },
+                    { name: 'Queso emental', tags: ['perecedero'] },
+                    { name: 'Queso fresco', tags: ['fresco', 'perecedero'] },
+                    { name: 'Queso para untar', tags: ['perecedero'] },
+                    { name: 'Queso tierno', tags: ['perecedero'] },
+                    { name: 'Queso semicurado', tags: ['perecedero'] },
+                    { name: 'Queso curado', tags: ['perecedero'] },
+                    { name: 'Queso con piña', tags: ['perecedero'] },
+                    { name: 'Queso en lonchas Harvati', tags: ['perecedero', 'semanal'] },
+                    { name: 'Queso rallado', tags: ['perecedero'] },
+                    { name: 'Queso para pizzas', tags: ['perecedero'] },
+                    { name: 'Longaniza', tags: ['perecedero'] },
+                    { name: 'Espetec', tags: ['perecedero'] },
+                    { name: 'Latas de magro de cerdo', tags: [] },
+                    { name: 'Alas de pollo congeladas', tags: ['congelado'] },
+                    { name: 'Solomillo congelado', tags: ['congelado'] },
+                    { name: 'Secreto de cerdo', tags: ['fresco', 'perecedero'] },
+                    { name: 'Pluma de cerdo', tags: ['fresco', 'perecedero'] },
+                    { name: 'Costillas de cerdo', tags: ['fresco', 'perecedero'] },
+                    { name: 'Trozos de magro de cerdo', tags: ['fresco', 'perecedero'] },
+                    { name: 'Lomo de cerdo en lonchas', tags: ['fresco', 'perecedero'] },
+                    { name: 'Oreja de cerdo fresca', tags: ['fresco', 'perecedero'] },
+                    { name: 'Filete de ternera', tags: ['fresco', 'perecedero'] },
+                    { name: 'Tacos de ternera', tags: ['fresco', 'perecedero'] },
+                    { name: 'Pechugas de pollo enteras', tags: ['fresco', 'perecedero', 'semanal'] },
+                    { name: 'Muslos de pollo deshuesados', tags: ['fresco', 'perecedero'] },
+                    { name: 'Medio pollo troceado', tags: ['fresco', 'perecedero'] },
+                    { name: 'Chuletas de cordero', tags: ['fresco', 'perecedero'] },
+                    { name: 'Hamburguesas de ternera', tags: ['fresco', 'perecedero'] },
+                    { name: 'Carne picada mezcla ternera y cerdo', tags: ['fresco', 'perecedero'] },
+                    { name: 'Oreja de cerdo adobada', tags: ['fresco', 'perecedero'] },
+                    { name: 'Pollo empanado', tags: ['perecedero', 'preparados'] },
+                    { name: 'Lágrimas de pollo', tags: ['perecedero', 'preparados'] },
+                    { name: 'Pechugas rebozadas', tags: ['perecedero', 'preparados'] },
+                    { name: 'Carne de pinchos', tags: ['fresco', 'perecedero'] },
+                    { name: 'Ketchup', tags: [] },
+                    { name: 'Mayonesa', tags: [] },
+                    { name: 'Salsa rústica (para patatas)', tags: [] },
+                    { name: 'Salsa yogur', tags: [] },
+                    { name: 'Salsa kebab', tags: [] },
+                    { name: 'Tomate concentrado', tags: [] },
+                    { name: 'Puntas de espárragos', tags: [] },
+                    { name: 'Judías verdes redondas', tags: [] },
+                    { name: 'Alcachofas', tags: [] },
+                    { name: 'Aceite de girasol', tags: [] },
+                    { name: 'Aceite de oliva virgen extra', tags: [] }
+                ]
+            },
+            {
+                id: 'pasillo-4',
+                title: 'Pasillo 4 · Papel, Encurtidos, Snacks y Arroz',
+                subtitle: 'De las cajas al fondo',
+                icon: 'ph-package',
+                collapsed: false,
+                items: [
+                    { name: 'Pañuelos de papel', tags: ['limpieza'] },
+                    { name: 'Servilletas', tags: ['limpieza'] },
+                    { name: 'Toallitas húmedas', tags: ['limpieza'] },
+                    { name: 'Rollo de papel de cocina', tags: ['limpieza'] },
+                    { name: 'Papel higiénico', tags: ['limpieza', 'semanal'] },
+                    { name: 'Sticks para perros', tags: [] },
+                    { name: 'Altramuces', tags: [] },
+                    { name: 'Kimbos', tags: [] },
+                    { name: 'Aceitunas "Chupadedos"', tags: [] },
+                    { name: 'Banderillas', tags: [] },
+                    { name: 'Aceitunas negras', tags: [] },
+                    { name: 'Aceitunas rellenas', tags: [] },
+                    { name: 'Pistachos', tags: [] },
+                    { name: 'Almendras crudas', tags: [] },
+                    { name: 'Anacardos', tags: [] },
+                    { name: 'Cacahuetes con miel', tags: [] },
+                    { name: 'Atún en lata (aceite de oliva)', tags: [] },
+                    { name: 'Atún en lata (aceite de girasol)', tags: [] },
+                    { name: 'Caballa en aceite de oliva', tags: [] },
+                    { name: 'Caballa con tomate', tags: [] },
+                    { name: 'Maíz en lata', tags: [] },
+                    { name: 'Mejillones en escabeche', tags: [] },
+                    { name: 'Bolsa de patatas fritas', tags: [] },
+                    { name: 'Bolsa de Bocabits', tags: [] },
+                    { name: 'Nachos', tags: [] },
+                    { name: 'Salsa de nachos', tags: [] },
+                    { name: 'Tortas de trigo (kebab)', tags: [] },
+                    { name: 'Risketos', tags: [] },
+                    { name: 'Arroz redondo', tags: [] },
+                    { name: 'Arroz largo', tags: [] },
+                    { name: 'Arroz bomba', tags: [] },
+                    { name: 'Arroz liofilizado', tags: [] }
+                ]
+            },
+            {
+                id: 'giro-4-5',
+                title: 'Giro Pasillo 4 a 5 · Pastas y Caldos',
+                subtitle: 'Zona del fondo',
+                icon: 'ph-bowl-food',
+                collapsed: false,
+                items: [
+                    { name: 'Espaguetis al huevo', tags: [] },
+                    { name: 'Macarrones al huevo', tags: [] },
+                    { name: 'Fideos finos', tags: [] },
+                    { name: 'Fideuá', tags: [] },
+                    { name: 'Crema de pollo', tags: ['preparados'] },
+                    { name: 'Caldo de pollo', tags: ['preparados'] },
+                    { name: 'Caldo de verduras', tags: ['preparados'] },
+                    { name: 'Caldo de cocido', tags: ['preparados'] },
+                    { name: 'Caldo de carne', tags: ['preparados'] },
+                    { name: 'Fumet de pescado', tags: ['preparados'] }
+                ]
+            },
+            {
+                id: 'pasillo-5',
+                title: 'Pasillo 5 · Lácteos, Zumos y Aseo',
+                subtitle: 'Del fondo a las cajas',
+                icon: 'ph-drop',
+                collapsed: false,
+                items: [
+                    { name: 'Pack de 3 multifrutas rosa', tags: [] },
+                    { name: 'Pack de 3 multifrutas azul', tags: [] },
+                    { name: 'Batidos de chocolate pack de 6', tags: [] },
+                    { name: 'Azúcar', tags: [] },
+                    { name: 'Leche entera (Pack de 6 litros)', tags: ['semanal'] },
+                    { name: 'Jabón de manos', tags: ['limpieza'] },
+                    { name: 'Gel de baño', tags: ['limpieza'] },
+                    { name: 'Esponjas', tags: ['limpieza'] },
+                    { name: 'Pasta de dientes', tags: ['limpieza'] },
+                    { name: 'Colutorio', tags: ['limpieza'] },
+                    { name: 'Colutorio mamá', tags: ['limpieza'] },
+                    { name: 'Repuestos cepillo eléctrico', tags: ['limpieza'] },
+                    { name: 'Colonia', tags: ['limpieza'] },
+                    { name: 'Champú', tags: ['limpieza'] },
+                    { name: 'Salvaslips mamá', tags: ['limpieza'] }
+                ]
+            },
+            {
+                id: 'pasillo-6',
+                title: 'Pasillo 6 · Limpieza, Yogures y Galletas',
+                subtitle: 'De las cajas al fondo',
+                icon: 'ph-sparkle',
+                collapsed: false,
+                items: [
+                    { name: 'Lejía', tags: ['limpieza'] },
+                    { name: 'Lejía blanca', tags: ['limpieza'] },
+                    { name: 'Quitagrasas', tags: ['limpieza'] },
+                    { name: 'Fregasuelos', tags: ['limpieza'] },
+                    { name: 'Suavizante', tags: ['limpieza'] },
+                    { name: 'Detergente de lavadora', tags: ['limpieza', 'semanal'] },
+                    { name: 'Pato WC morado', tags: ['limpieza'] },
+                    { name: 'Pato WC azul', tags: ['limpieza'] },
+                    { name: 'Salfumant wc', tags: ['limpieza'] },
+                    { name: 'Fairy', tags: ['limpieza'] },
+                    { name: 'Limpiacristales', tags: ['limpieza'] },
+                    { name: 'Estropajos', tags: ['limpieza'] },
+                    { name: 'Bolsas de basura', tags: ['limpieza', 'semanal'] },
+                    { name: 'Bolsas de basura papelera', tags: ['limpieza', 'semanal'] },
+                    { name: 'Bayetas absorbentes', tags: ['limpieza'] },
+                    { name: 'Natillas sin galleta', tags: ['fresco', 'perecedero'] },
+                    { name: 'Arroz con leche', tags: ['fresco', 'perecedero'] },
+                    { name: 'Mousse de chocolate', tags: ['fresco', 'perecedero'] },
+                    { name: 'Copas de chocolate', tags: ['fresco', 'perecedero'] },
+                    { name: 'Yogur natural con azúcar de caña pack de 8', tags: ['fresco', 'perecedero', 'semanal'] },
+                    { name: 'Yogures con fruta pack de 8', tags: ['fresco', 'perecedero', 'semanal'] },
+                    { name: 'Yogur líquido', tags: ['fresco', 'perecedero'] },
+                    { name: 'Yogur 500g con frutas del bosque', tags: ['fresco', 'perecedero'] },
+                    { name: 'Crema catalana', tags: ['fresco', 'perecedero'] },
+                    { name: 'Tocino de cielo', tags: ['fresco', 'perecedero'] },
+                    { name: 'Chococrispies', tags: [] },
+                    { name: 'Galletas María', tags: [] },
+                    { name: 'Galletas de chocolate', tags: [] },
+                    { name: 'Galletas bañadas en chocolate', tags: [] },
+                    { name: 'Chocolate AMALIA', tags: [] },
+                    { name: 'Azúcar de 1 kilo', tags: [] },
+                    { name: 'Azúcar en unidades', tags: [] }
+                ]
+            },
+            {
+                id: 'pasillo-7',
+                title: 'Pasillo 7 · Bollería, Pan y Comida Preparada',
+                subtitle: 'Del fondo a las cajas',
+                icon: 'ph-bread',
+                collapsed: false,
+                items: [
+                    { name: 'Tableta de chocolate con leche mamá', tags: [] },
+                    { name: 'Tableta de chocolate con almendras', tags: [] },
+                    { name: 'Pan dulce', tags: ['perecedero'] },
+                    { name: 'Pan de molde sin corteza', tags: ['perecedero', 'semanal'] },
+                    { name: 'Pan de hamburguesas', tags: ['perecedero'] },
+                    { name: 'Pan de perrito caliente', tags: ['perecedero'] },
+                    { name: 'Croasanes de chocolate', tags: ['perecedero'] },
+                    { name: 'Saladitos', tags: ['perecedero'] },
+                    { name: 'Donetes', tags: ['perecedero'] },
+                    { name: 'Donuts blancos', tags: ['perecedero'] },
+                    { name: 'Pan en rebanadas', tags: ['perecedero'] },
+                    { name: 'Empanada', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Madalenas', tags: [] },
+                    { name: 'Brioches de leche', tags: [] },
+                    { name: 'Pan tostado pequeño', tags: [] },
+                    { name: 'Pan tostado grande', tags: [] },
+                    { name: 'Picos', tags: [] },
+                    { name: 'picatostes con ajo', tags: [] },
+                    { name: 'Gazpacho premium botella pequeña', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Tortilla con cebolla', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Patatas bravas', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Ensaladilla rusa', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Patatas con alioli', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Ensaladilla americana', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Chovy', tags: ['perecedero', 'preparados'] },
+                    { name: 'Kebab con patatas', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Lasaña de verduras', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Lasaña de carne grande', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Albóndigas en salsa', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Arroz con verduras', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Migas', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Raviolis con rabo de toro', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Pizza fresca grande', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Pizza fresca mediana', tags: ['fresco', 'perecedero', 'preparados'] },
+                    { name: 'Sushi', tags: ['fresco', 'perecedero', 'preparados'] }
+                ]
+            },
+            {
+                id: 'pasillo-1-congelados',
+                title: 'Pasillo 1 · Zona de Congelados',
+                subtitle: 'Del fondo a las cajas (final de ruta)',
+                icon: 'ph-snowflake',
+                collapsed: false,
+                items: [
+                    { name: 'Pizzas congeladas', tags: ['congelado'] },
+                    { name: 'Tequeños', tags: ['congelado', 'preparados'] },
+                    { name: 'Fritura de pescado', tags: ['congelado'] },
+                    { name: 'Gamba pelada grande', tags: ['congelado'] },
+                    { name: 'Croquetas premium de jamón', tags: ['congelado', 'preparados'] },
+                    { name: 'Croquetas premium de bacalao', tags: ['congelado', 'preparados'] },
+                    { name: 'Calamar', tags: ['congelado'] },
+                    { name: 'Atún en pieza', tags: ['congelado'] },
+                    { name: 'Salmón en piezas', tags: ['congelado'] },
+                    { name: 'Merluza en dados', tags: ['congelado'] },
+                    { name: 'Merluza en medallas', tags: ['congelado'] },
+                    { name: 'Langostinos crudos', tags: ['congelado'] },
+                    { name: 'Sepia entera', tags: ['congelado'] },
+                    { name: 'Queso frito', tags: ['congelado'] },
+                    { name: 'Tarrina de chocolate', tags: ['congelado'] },
+                    { name: 'Tarrina de vainilla', tags: ['congelado'] },
+                    { name: 'Sándwich de nata', tags: ['congelado'] },
+                    { name: 'Polos de chocolate', tags: ['congelado'] }
+                ]
+            }
+        ];
+
+        const TAG_CONFIG = {
+            urgente: { label: 'Urgente', short: 'Urgente', activeClass: 'bg-red-600 text-white border-red-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-600' },
+            fresco: { label: 'Fresco', short: 'Fresco', activeClass: 'bg-emerald-600 text-white border-emerald-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600' },
+            congelado: { label: 'Congelado', short: 'Congelado', activeClass: 'bg-cyan-600 text-white border-cyan-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-cyan-50 hover:text-cyan-600' },
+            frutas: { label: 'Frutas y Verduras', short: 'Frutas/Verd.', activeClass: 'bg-amber-600 text-white border-amber-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-600' },
+            semanal: { label: 'Semanal', short: 'Semanal', activeClass: 'bg-sky-600 text-white border-sky-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-sky-50 hover:text-sky-600' },
+            limpieza: { label: 'Limpieza', short: 'Limpieza', activeClass: 'bg-purple-600 text-white border-purple-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-purple-50 hover:text-purple-600' },
+            preparados: { label: 'Preparados', short: 'Preparados', activeClass: 'bg-pink-600 text-white border-pink-600', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-pink-50 hover:text-pink-600' },
+            perecedero: { label: 'Perecedero', short: 'Pereced.', activeClass: 'bg-orange-500 text-white border-orange-500', inactiveClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-orange-50 hover:text-orange-600' }
+        };
+
+        const STORAGE_KEY = 'mercadona_albacete_compra_v3';
+        let appState = { aisles: [], currentFilter: 'all', searchQuery: '' };
+
+        function buildInitialState() {
+            return DEFAULT_AISLES.map(aisle => ({
+                ...aisle,
+                items: aisle.items.map((item, iIdx) => ({
+                    id: `${aisle.id}-${iIdx}`,
+                    name: item.name,
+                    tags: [...item.tags],
+                    checked: false,
+                    qty: 1,
+                    price: ''
+                }))
+            }));
+        }
+
+        function initApp() {
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#lista=')) {
+                try {
+                    const encoded = hash.replace('#lista=', '');
+                    const decodedJson = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+                    if (Array.isArray(decodedJson) && decodedJson.length > 0) {
+                        appState.aisles = decodedJson;
+                        saveToStorage();
+                        document.getElementById('shared-banner').classList.remove('hidden');
+                        history.replaceState(null, null, ' ');
+                    }
+                } catch (e) { console.error('Error cargando enlace', e); }
+            }
+
+            if (appState.aisles.length === 0) {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    try { appState.aisles = JSON.parse(saved); }
+                    catch (e) { appState.aisles = buildInitialState(); }
+                } else {
+                    appState.aisles = buildInitialState();
+                }
+            }
+            populateAisleSelect();
+            renderApp();
+        }
+
+        function saveToStorage() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.aisles)); } catch (e) {}
+        }
+
+        function renderApp() {
+            const container = document.getElementById('aisles-container');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            let totalItems = 0;
+            let checkedItems = 0;
+            let urgentPending = 0;
+            let visibleAislesCount = 0;
+            let estimatedTotal = 0;
+
+            const query = appState.searchQuery.trim().toLowerCase();
+
+            appState.aisles.forEach(aisle => {
+                aisle.items.forEach(item => {
+                    totalItems++;
+                    if (item.checked) {
+                        checkedItems++;
+                        const p = parseFloat(item.price) || 0;
+                        const q = parseInt(item.qty) || 1;
+                        estimatedTotal += p * q;
+                    }
+                    if (!item.checked && item.tags.includes('urgente')) urgentPending++;
+                });
+
+                const filteredItems = aisle.items.filter(item => {
+                    if (query && !item.name.toLowerCase().includes(query)) return false;
+                    if (appState.currentFilter === 'pending') return !item.checked;
+                    if (appState.currentFilter !== 'all' && !item.tags.includes(appState.currentFilter)) return false;
+                    return true;
+                });
+
+                if (filteredItems.length === 0) return;
+                visibleAislesCount++;
+
+                const aislePendingCount = filteredItems.filter(i => !i.checked).length;
+                const isCollapsed = aisle.collapsed && !query;
+
+                const aisleEl = document.createElement('section');
+                aisleEl.className = 'bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden';
+
+                aisleEl.innerHTML = `
+                    <div onclick="toggleAisleCollapse('${aisle.id}')" class="px-4 py-3 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between cursor-pointer select-none active:bg-slate-100">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-8 h-8 rounded-xl bg-mercadona-light text-mercadona flex items-center justify-center shrink-0">
+                                <i class="ph-bold ${aisle.icon} text-lg"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h2 class="font-bold text-sm text-slate-800 truncate">${aisle.title}</h2>
+                                <p class="text-[11px] text-slate-500 truncate">${aisle.subtitle}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${aislePendingCount === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200/80 text-slate-700'}">
+                                ${aislePendingCount === 0 ? '¡Listo!' : aislePendingCount}
+                            </span>
+                            <i class="ph-bold ph-caret-down text-slate-400 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}"></i>
+                        </div>
+                    </div>
+                `;
+
+                if (!isCollapsed) {
+                    const listEl = document.createElement('div');
+                    listEl.className = 'divide-y divide-slate-100';
+
+                    filteredItems.forEach(item => {
+                        const isUrgent = item.tags.includes('urgente') && !item.checked;
+                        const row = document.createElement('div');
+                        row.className = `px-3.5 py-2.5 flex items-start gap-2.5 transition-colors ${item.checked ? 'item-checked' : isUrgent ? 'bg-red-50/40' : 'bg-white'}`;
+
+                        row.innerHTML = `
+                            <!-- Checkbox -->
+                            <button onclick="toggleItemCheck('${aisle.id}', '${item.id}')" 
+                                class="mt-1 w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition active:scale-90 ${item.checked ? 'bg-mercadona border-mercadona text-white' : 'border-slate-300 bg-white hover:border-mercadona'}">
+                                ${item.checked ? '<i class="ph-bold ph-check text-sm"></i>' : ''}
+                            </button>
+
+                            <!-- Nombre, etiquetas y controles -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div onclick="toggleItemCheck('${aisle.id}', '${item.id}')" class="cursor-pointer select-none flex-1">
+                                        <span class="item-name text-sm font-medium text-slate-800 leading-snug block ${isUrgent ? 'font-bold text-red-900' : ''}">
+                                            ${escapeHtml(item.name)}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Precio x Unidad -->
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <div class="relative">
+                                            <input type="number" step="0.01" min="0" value="${item.price}" placeholder="0.00 €" 
+                                                onchange="updateItemPrice('${aisle.id}', '${item.id}', this.value)"
+                                                class="w-16 bg-slate-50 border border-slate-200 text-right text-xs font-bold rounded-lg px-1.5 py-1 focus:bg-white focus:outline-none focus:ring-1 focus:ring-mercadona">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between gap-2 mt-2">
+                                    <!-- Etiquetas rápidas -->
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        ${Object.keys(TAG_CONFIG).map(tagKey => {
+                                            const active = item.tags.includes(tagKey);
+                                            const cfg = TAG_CONFIG[tagKey];
+                                            return `
+                                                <button onclick="toggleItemTag('${aisle.id}', '${item.id}', '${tagKey}')"
+                                                    class="text-[9px] font-bold px-1.5 py-0.5 rounded border transition active:scale-95 ${active ? cfg.activeClass : cfg.inactiveClass}">
+                                                    ${cfg.short}
+                                                </button>
+                                            `;
+                                        }).join('')}
+                                    </div>
+
+                                    <!-- Selector de Unidades -->
+                                    <div class="flex items-center bg-slate-100 rounded-lg border border-slate-200 shrink-0">
+                                        <button onclick="updateItemQty('${aisle.id}', '${item.id}', -1)" class="w-6 h-6 flex items-center justify-center text-slate-600 hover:bg-slate-200 rounded-l-lg font-bold text-xs">-</button>
+                                        <span class="w-7 text-center text-xs font-bold text-slate-800">${item.qty}</span>
+                                        <button onclick="updateItemQty('${aisle.id}', '${item.id}', 1)" class="w-6 h-6 flex items-center justify-center text-slate-600 hover:bg-slate-200 rounded-r-lg font-bold text-xs">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        listEl.appendChild(row);
+                    });
+
+                    aisleEl.appendChild(listEl);
+                }
+
+                container.appendChild(aisleEl);
+            });
+
+            if (visibleAislesCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Actualizar Total y Barras
+            document.getElementById('realtime-total').textContent = estimatedTotal.toFixed(2).replace('.', ',') + ' €';
+            const pct = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
+            document.getElementById('progress-text').textContent = `${checkedItems} de ${totalItems} en el carrito (${pct}%)`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+
+            const urgentBadge = document.getElementById('urgent-counter');
+            if (urgentPending > 0) {
+                urgentBadge.textContent = `${urgentPending} urgente${urgentPending > 1 ? 's' : ''}`;
+                urgentBadge.classList.remove('hidden');
+            } else {
+                urgentBadge.classList.add('hidden');
+            }
+        }
+
+        function toggleItemCheck(aisleId, itemId) {
+            const aisle = appState.aisles.find(a => a.id === aisleId);
+            if (!aisle) return;
+            const item = aisle.items.find(i => i.id === itemId);
+            if (!item) return;
+            item.checked = !item.checked;
+            saveToStorage();
+            renderApp();
+        }
+
+        function updateItemQty(aisleId, itemId, delta) {
+            const aisle = appState.aisles.find(a => a.id === aisleId);
+            if (!aisle) return;
+            const item = aisle.items.find(i => i.id === itemId);
+            if (!item) return;
+            item.qty = Math.max(1, (parseInt(item.qty) || 1) + delta);
+            saveToStorage();
+            renderApp();
+        }
+
+        function updateItemPrice(aisleId, itemId, val) {
+            const aisle = appState.aisles.find(a => a.id === aisleId);
+            if (!aisle) return;
+            const item = aisle.items.find(i => i.id === itemId);
+            if (!item) return;
+            item.price = val;
+            saveToStorage();
+            renderApp();
+        }
+
+        function toggleItemTag(aisleId, itemId, tagKey) {
+            const aisle = appState.aisles.find(a => a.id === aisleId);
+            if (!aisle) return;
+            const item = aisle.items.find(i => i.id === itemId);
+            if (!item) return;
+            const idx = item.tags.indexOf(tagKey);
+            if (idx > -1) item.tags.splice(idx, 1);
+            else item.tags.push(tagKey);
+            saveToStorage();
+            renderApp();
+        }
+
+        function toggleAisleCollapse(aisleId) {
+            const aisle = appState.aisles.find(a => a.id === aisleId);
+            if (!aisle) return;
+            aisle.collapsed = !aisle.collapsed;
+            saveToStorage();
+            renderApp();
+        }
+
+        function setFilter(filterName) {
+            appState.currentFilter = filterName;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filterName) {
+                    btn.className = 'filter-btn active shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-white text-mercadona shadow-sm';
+                } else {
+                    btn.className = 'filter-btn shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition text-white/90 hover:bg-white/10 flex items-center gap-1';
+                }
+            });
+            renderApp();
+        }
+
+        function handleSearch(val) {
+            appState.searchQuery = val;
+            const clearBtn = document.getElementById('clear-search');
+            if (val.trim().length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+            renderApp();
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search-input');
+            input.value = '';
+            handleSearch('');
+            input.focus();
+        }
+
+        function resetFilters() {
+            clearSearch();
+            setFilter('all');
+        }
+
+        function populateAisleSelect() {
+            const select = document.getElementById('new-item-aisle');
+            select.innerHTML = appState.aisles.map(a => `<option value="${a.id}">${a.title}</option>`).join('');
+        }
+
+        function openAddModal() {
+            document.getElementById('new-item-name').value = '';
+            document.getElementById('new-item-qty').value = '1';
+            document.getElementById('new-item-price').value = '';
+            Object.keys(TAG_CONFIG).forEach(t => {
+                const el = document.getElementById(`tag-${t}`);
+                if (el) el.checked = false;
+            });
+            const modal = document.getElementById('add-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('new-item-name').focus(), 100);
+        }
+
+        function closeAddModal() {
+            const modal = document.getElementById('add-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveNewProduct(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-item-name').value.trim();
+            const aisleId = document.getElementById('new-item-aisle').value;
+            const qty = parseInt(document.getElementById('new-item-qty').value) || 1;
+            const price = document.getElementById('new-item-price').value;
+            if (!name) return;
+
+            const tags = [];
+            Object.keys(TAG_CONFIG).forEach(t => {
+                const el = document.getElementById(`tag-${t}`);
+                if (el && el.checked) tags.push(t);
+            });
+
+            const aisle = appState.aisles.find(a => a.id === aisleId);
+            if (aisle) {
+                aisle.items.unshift({
+                    id: `custom-${Date.now()}`,
+                    name,
+                    tags,
+                    checked: false,
+                    qty,
+                    price
+                });
+                aisle.collapsed = false;
+                saveToStorage();
+                renderApp();
+                showToast(`"${name}" añadido`);
+            }
+            closeAddModal();
+        }
+
+        function confirmUncheckAll() {
+            openConfirmModal(
+                '¿Limpiar carrito?',
+                'Se desmarcarán los productos comprados para iniciar una nueva vuelta, pero los precios y cantidades configuradas se mantendrán.',
+                'Limpiar',
+                () => {
+                    appState.aisles.forEach(a => a.items.forEach(i => i.checked = false));
+                    saveToStorage();
+                    renderApp();
+                    showToast('Carrito limpio (precios conservados)');
+                }
+            );
+        }
+
+        function confirmFullReset() {
+            openConfirmModal(
+                '¿Restaurar lista original?',
+                'Se borrarán los productos añadidos a mano y se restaurará la lista de origen.',
+                'Restaurar todo',
+                () => {
+                    appState.aisles = buildInitialState();
+                    saveToStorage();
+                    resetFilters();
+                    showToast('Lista original restaurada');
+                }
+            );
+        }
+
+        function openConfirmModal(title, message, btnText, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            const actionBtn = document.getElementById('confirm-action-btn');
+            actionBtn.textContent = btnText;
+            actionBtn.onclick = () => { closeConfirmModal(); onConfirm(); };
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openShareModal() {
+            // Mostrar aviso si está abierto como archivo local (file://)
+            if (window.location.protocol === 'file:') {
+                document.getElementById('local-warning').classList.remove('hidden');
+            } else {
+                document.getElementById('local-warning').classList.add('hidden');
+            }
+
+            const modal = document.getElementById('share-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeShareModal() {
+            const modal = document.getElementById('share-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function generateShareableUrl() {
+            const json = JSON.stringify(appState.aisles);
+            const encoded = btoa(unescape(encodeURIComponent(json)));
+            const baseUrl = window.location.href.split('#')[0];
+            return `${baseUrl}#lista=${encoded}`;
+        }
+
+        function shareViaWhatsApp() {
+            const shareUrl = generateShareableUrl();
+            const text = `🛒 *Lista de Compra - Mercadona (Albacete)*\n\nHola, te comparto mi lista de la compra con los productos marcados, precios y artículos añadidos:\n\n${shareUrl}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            
+            // Abrir de forma segura evitando bloqueadores de popups en móviles
+            const a = document.createElement('a');
+            a.href = whatsappUrl;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeShareModal();
+        }
+
+        function copyInteractiveLink() {
+            copyToClipboard(generateShareableUrl(), 'Enlace interactivo copiado al portapapeles');
+            closeShareModal();
+        }
+
+        function copyToClipboard(text, msg) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try { document.execCommand('copy'); showToast(msg); } catch (err) {}
+            document.body.removeChild(textarea);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('opacity-0');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => toast.classList.add('opacity-0'), 2600);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
